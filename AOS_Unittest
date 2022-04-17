@@ -1,0 +1,249 @@
+from unittest import TestCase
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from time import sleep
+from random import randint
+from selenium.webdriver.common.by import By
+from project_selenium import AOS
+
+class AOS_UnitTests(TestCase):
+    def setUp(self):
+        service_chrome = Service(r"C:\QA\Pycharm\chromedriver.exe")
+
+        self.driver = webdriver.Chrome(service=service_chrome)
+
+        self.driver.get("http://www.advantageonlineshopping.com/#/")
+        self.driver.maximize_window()
+
+        # In case an element is not found on the page, will try again for 30 seconds
+        # before we get an error message
+        self.driver.implicitly_wait(30)
+
+        self.project = AOS(self.driver)
+
+    def test_1(self):
+        """This test is checking that the amount in cart icon is correct"""
+        self.project.select_category_speakers() #opens the speakers category page
+        self.project.select_product(4) #select the product
+        self.project.add_quantity(2) # increase quantity of the product
+        product1qty = int(self.project.product_page_quantity()) #saves the choosen product and his quantity in parameter
+        self.project.add_to_cart() #add the product to the cart
+        sleep(1)
+        self.project.back() # go back one step
+        self.project.select_product(2) # choose another product in this category
+        self.project.add_quantity(5) # increase quantity to this product
+        sleep(1)
+        product2qty = int(self.project.product_page_quantity())
+        self.project.add_to_cart()
+        sleep(1)
+        self.assertEqual(int(self.project.shopping_cart_icon_qty()), (product1qty + product2qty))
+        self.project.return_to_home_page()
+
+    def test_2(self):
+        """This test verifies that the product details in the cart window matched the product details"""
+        self.project.select_category_speakers() # select category speakers
+        self.project.select_product(4) # Select Product in category speakers
+        self.project.add_quantity(2) # increase product amount
+        product1qty=int(self.project.product_page_quantity()) # save the product in parameter
+        self.project.add_to_cart() # add to cart our product
+        sleep(1) # wait for one second
+        self.project.back()# go back to previous page
+        self.project.select_product(2) # select another product in the same category
+        self.project.add_quantity(5) #add diffrent qunatity
+        sleep(1) # go to sleep for one second
+        product2qty=int(self.project.product_page_quantity()) #save into parameter
+        self.project.add_to_cart() # add to cart
+        sleep(1)
+        self.project.back() #go previous page
+        self.project.select_product(0) #click on another product
+        product3qty=int(self.project.product_page_quantity()) # save the parameters
+        self.project.add_to_cart() #add to cart the product
+        sleep(1) #sleep for 1 second
+        p2name = self.project.product_page_name() #save the name element
+        p2quantity = self.project.product_page_quantity() #save the quantity element
+        p2color = self.project.product_page_color() #save the color element
+        if p2name[0:27]==self.project.shopping_cart_popup_product_name(1)[0:27] and p2quantity==self.project.shopping_cart_popup_product_qty(1) and p2color==self.project.shopping_cart_popup_product_color(1):
+            print("Success")
+
+    def test_3(self):
+        """This Test"""
+        self.project.select_category_speakers()#enter to category speakers
+        self.project.select_product(4) #enter to a product
+        self.project.add_quantity(2) #increase to amount of the product
+        product1qty = int(self.project.product_page_quantity())#change the string of quantity to integer and save to parameter
+        self.project.add_to_cart() #add to cart
+        sleep(1) #wait one second
+        self.project.back() # go back to previous page
+        self.project.select_product(2) # select annother product in this category
+        self.project.add_quantity(5) # increase the amount of this product
+        sleep(1) # wait for one second
+        product2qty = int(self.project.product_page_quantity()) #save to parameter
+        self.project.add_to_cart() # add to cart
+        sleep(1)
+        self.project.back() # go back to previous page
+        self.project.select_product(0) # select another product
+        product3qty = int(self.project.product_page_quantity()) #save parameters of this product
+        self.project.add_to_cart() # add to cart
+        sleep(1)
+        p2name = self.project.product_page_name() # name element parameter
+        p2price = self.project.shopping_cart_popup_product_price() #price element parameter
+        if ((p2name[0:27]+"...") or (p2name)) and p2price and p2price not in self.project.shopping_cart_popup_product_info(1): #the condition of the test
+            print("Removed")  #the result
+        print(self.project.shopping_cart_popup_product_info(1)) #the final result
+
+    def test_4(self):
+        """This test makes sure that after clicking on the 'Cart' icon,
+         the page redirected to the 'Shopping Cart' page"""
+        self.project.select_category_speakers() # enter to category speakers
+        sleep(3) # sleep for 3 seconds
+        self.project.select_product_by_id(25) # select product in category speakers
+        self.project.add_to_cart() #add the product to cart
+        sleep(3) #sleep for 3 seconds
+        self.project.move_to_shopping_cart_page()#go to shoping cart page
+        self.assertTrue(self.driver.find_element(By.LINK_TEXT, "SHOPPING CART")) # check if the shopping cart text link appears
+        sleep(2)
+
+    def test_5(self):
+        """This test checks that the price of all the products
+                which are in the cart - according to the actual products' price as shown
+                when ordering them """
+
+        self.project.select_category_speakers()  # select category speakers
+        self.project.select_product_by_id(25)  # select the product
+        self.project.add_quantity(1)  # increase the qunatity
+        self.project.add_to_cart()  # add the product to cart
+        sleep(2)  # sleep for 2 seconds
+        # Test for the first product
+        self.assertEqual(self.driver.find_element(By.XPATH, "/html/body/header/nav/ul/li[2]/ul/li/tool-tip-cart/div/table/tbody/tr/td[3]/p").text, '$258.00')  # check if the correct details appears
+        sleep(2)  # sleep for 2 seconds
+        self.project.return_to_home_page()  # return to the home page
+        self.project.select_category_tablets()  # enter to tablets category
+        self.project.select_product_by_id(17)  # enter to a product
+        self.project.add_to_cart()  # add the product to cart
+        sleep(2)
+        # Test for the second product
+        self.assertEqual(self.driver.find_element(By.XPATH, "/html/body/header/nav/ul/li[2]/ul/li/tool-tip-cart/div/table/tbody/tr[1]/td[3]/p").text, '$1,279.00')
+        sleep(2)
+        self.project.return_to_home_page()  # return to home page from the product page
+        self.project.select_category_mice()  # enter to mice category
+        self.project.select_product_by_id(29)  # enter to the product
+        self.project.add_quantity(2)  # increase the quantity of the product
+        self.project.add_to_cart()  # add the product to cart
+        sleep(2)  # sleep for two seconds
+        # Test for the Third product
+        self.assertEqual(self.driver.find_element(By.XPATH, "/html/body/header/nav/ul/li[2]/ul/li/tool-tip-cart/div/table/tbody/tr[1]/td[3]/p").text, '$29.97')
+        self.project.cart_page_button_click()  # enter to cart page
+        self.assertEqual(self.driver.find_element(By.XPATH, '/html/body/div[3]/section/article/div[1]/table/tfoot/tr[1]/td[2]/span[2]').text, '$1,566.97')
+
+    def test_6(self):
+        """BUG! This test checks the edit feature that after edit product quantity,the quantity will update on the cart page.
+        The test fails to success cause the edit button always edit the first product quantity"""
+        self.project.select_category_tablets() # enter to category tablets
+        sleep(3) # sleep for three seconds
+        self.project.select_product_by_id(17)  # enter the product page
+        self.project.add_to_cart() # add the product to cart
+        self.project.back() # return back one step
+        self.project.select_product_by_id(16) # enter to another product
+        self.project.add_to_cart() # add the product to cart
+        self.project.cart_page_button_click() # go to the shoping cart page
+        self.project.edit1_button_click() # click the edit button
+        self.project.add_quantity(2) # add quantity
+        self.project.add_to_cart() # add the quantity to the cart
+        self.assertEqual(self.driver.find_element(By.XPATH, '//*[@id="shoppingCart"]/table/tbody/tr[1]/td[5]/label[2]').text,"3") # test if text equal to 3
+        self.project.edit2_button_click() # click on the edit button
+        self.project.add_quantity(2) #add quantity 2
+        self.project.add_to_cart() # add to cart
+        self.assertEqual(self.driver.find_element(By.XPATH, '//*[@id="shoppingCart"]/table/tbody/tr[2]/td[5]/label[2]').text,"3") # this test should be true but there is a bug so it's not working
+
+    def test_7(self):
+        """This test checks the flow between pages using the navigation bar"""
+        self.project.select_category_tablets() #enter to category tablets
+        sleep(3) #sleep for 3 secoonds
+        self.project.select_product_by_id(17) #pick the product in tablet category
+        self.project.add_to_cart() # add the product to the cart
+        self.project.back() #navigate back to previous page
+        self.assertTrue(self.driver.find_element(By.CSS_SELECTOR, ".categoryTitle")) #check if we are in the previous page
+        self.project.back() #navigate back to previous page
+        self.assertTrue(self.driver.find_element(By.LINK_TEXT, "OUR PRODUCTS")) #check if are in the main page
+
+    def test_8(self):
+        """This test checks an  process of order placement using SafePay method for
+                a new user"""
+        self.project.select_category_tablets()  # enter to category tablets
+        sleep(3)  # sleep for 3 seconds
+        self.project.select_product_by_id(17)  # enter to product
+        self.project.add_to_cart()  # add the product to cart
+        self.project.back()  # go back one time
+        self.project.select_product_by_id(16)  # select another product in tablets category
+        self.project.add_to_cart()  # add the product to the cart
+        sleep(2)  # sleep for two seconds
+        self.project.checkout()  # go to checkout page
+        self.project.order_payment_page_registration()  # click the register button
+        self.project.create_account("qwerty1", "Qwerty1", "wwwweere2342@wr.rr")  # enter name password and email
+        sleep(2)  # go to sleep for two seconds
+        self.project.next_icon_click()  # click the next button
+        # safe pay
+        self.project.order_payment_page_enter_username("blahblahblah")  # enter user name
+        self.project.order_payment_page_enter_password("Nahnahnah1")  # enter password
+        sleep(2)  # go to sleep for two seconds
+        self.project.order_payment_page_login()  # connect and pay
+        sleep(2)  # sleep for two seconds
+        self.assertTrue(
+        self.project.thank_you_page())  # checks if thank you page appear shows that the payment succesfull pass
+        self.project.cart_toolbar_page_button_click()  # enter to the cart page
+        self.assertTrue(self.driver.find_element(By.LINK_TEXT, "CONTINUE SHOPPING"))  # checks if button continiue shoping appear (mean that the cart is empty)
+        sleep(2)  # sleep for two seconds
+        self.project.menu_icon_click()  # press the user icon
+        self.project.my_orders_page_button_click()  # click the my orders button
+        self.assertEqual(len(self.driver.find_element(By.XPATH, '/html/body/div[3]/section/article/div[2]/div/table/tbody/tr[2]/td[1]/label').text), 10)  # checks if there is an order
+
+    def test_9(self):
+        """This test checks an  process of order placement using CreditCard for
+        an existing user"""
+        self.project.select_category_tablets() # enter to tablets category
+        sleep(3) # sleep for three seconds
+        self.project.select_product_by_id(17) # enter to product page
+        self.project.add_to_cart()  # add the product to cart
+        self.project.back() # go back to category page
+        self.project.select_product_by_id(16) # select another product
+        self.project.add_to_cart()  #add the product to the cart
+        sleep(2) # go sleep for two seconds
+        self.project.checkout() # go to checkout page
+        self.project.user2_connect('qwerty1', 'Qwerty1') # connect to existing user
+        self.project.user_connect_button_click() #click the connect button
+        sleep(3) # go sleep for three seconds
+        self.project.next_icon_click() # click on the "next button"
+        sleep(2) # go sleep for two seconds
+        self.project.card_payment_button_click() # click on the credit card payment
+        self.project.order_payment_page_enter_card_number("448833993897") # enter the card number
+        self.project.order_payment_page_enter_cvv_field("4561") # enter the CVV OF THE CARD
+        self.project.order_payment_page_card_holder_password("Mikael") # enter the password
+        self.project.card2_payment_button_click() # click on the payment button
+        self.project.cart_toolbar_page_button_click() # click on the shoping cart in the toolbar
+        self.assertTrue(self.driver.find_element(By.LINK_TEXT, "CONTINUE SHOPPING"))  # check if continue shoping appear and this is mean that the cart is emty
+        sleep(2) # go sleep for two second
+        self.project.menu_icon_click() # click on the menu user icon
+        self.project.my_orders_page_button_click() # click on my orders button
+        self.assertEqual(len(self.driver.find_element(By.XPATH, '/html/body/div[3]/section/article/div[2]/div/table/tbody/tr[2]/td[1]/label').text), 10) # check if length = 10 and shows us if the order appears in my order or not
+
+    def test_10(self):
+        self.project.menu_icon_click()  # click on the menu icon button
+
+        self.project.user_connect('qwerty1', 'Qwerty1')  # connect to the user
+        sleep(2)  # go to sleep for two seconds
+        self.project.connect_account_page_enter_click()  # click on the connect button
+        sleep(2)  # go to sleep for two seconds
+        self.project.menu_icon_click()  # click on the menu icon button
+        sleep(2)  # go to sleep for two seconds
+        self.project.my_account_icon_click()  # enter to my account section
+        self.assertTrue(self.driver.find_element(By.LINK_TEXT, "MY ACCOUNT"))  # shows if "my account" appears (that mean we are in our account)
+        sleep(2)  # go to sleep for two seconds
+        self.project.menu_icon_click()  # click on the menu icon
+        sleep(2)  # go to sleep for two seconds
+        self.project.sign_out_icon_click()  # click on sign out from the user
+        sleep(2)  # go to sleep for two seconds
+        self.project.menu_icon_click()  # click on the menu icon
+        self.assertTrue(self.driver.find_element(By.LINK_TEXT, "CREATE NEW ACCOUNT"))  # checks if create new account appear (that mean that we succesfull sign out
+
+    # def tearDown(self):
+    #     self.driver.close()
